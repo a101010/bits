@@ -25,13 +25,29 @@ TEST_CASE("Read some individual bits.", "[getBit<uint32_t>]") {
 	REQUIRE(getBit(src, 1) == false);
 }
 
-TEST_CASE("Set two fields, dest = 0.", "[setBits<uint32_t, uint32_t> setBits<uint32_t, int32_t>]") {
+enum class State {
+	ON,
+	OFF,
+	Frozen,
+	AK,
+	Panic,
+	Gas,
+	CA,
+	TX,
+	UT,
+	Plasma,
+	SuperconductiveAtRoomTemperature
+};
+
+TEST_CASE("Set three fields, dest = 0.", "[setBits<uint32_t, uint32_t> setBits<uint32_t, int32_t>]") {
 	uint32_t dest = 0;
 	setBits(dest, width_lsb<uint32_t>(3, 29), 0xFFFFFFFF);
 	REQUIRE(dest == 0xE0000000);
 	int32_t value = -1;
 	setBits(dest, width_lsb<uint32_t>(3, 0), value);
 	REQUIRE(dest == 0xE0000007);
+	setBits(dest, width_lsb<uint32_t>(4, 5), State::SuperconductiveAtRoomTemperature);
+	REQUIRE(dest == 0xE0000147);
 }
 
 TEST_CASE("Set three fields, dest = 0xFFFFFFFF.", "[setBits<uint32_t, uint32_t> setBits<uint32_t, int32_t>]") {

@@ -126,13 +126,14 @@ void setBits(DestType& dest, const maskShift<DestType> m_s, const ValueType valu
     "DestType must be an unsigned integer type");
   static_assert(std::is_unsigned<DestType>::value,
     "DestType must be an unsigned integer type");
-  static_assert(std::is_integral<ValueType>::value,
-    "ValueType must be an integer type");
+  static_assert(std::is_integral<ValueType>::value | std::is_enum<ValueType>::value,
+    "ValueType must be an integer type or enum");
   static_assert(sizeof(ValueType) <= sizeof(DestType),
     "ValueType must be <= DestType");
   // m_s.first is the mask
   // m_s.second is the lsb
-  dest = ((value << m_s.second) & m_s.first) | (dest & ~m_s.first);
+  dest = ((static_cast<DestType>(value) << m_s.second) & m_s.first) 
+	  | (dest & ~m_s.first);
 }
 
 /**
