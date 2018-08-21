@@ -45,8 +45,10 @@ constexpr unsigned BITS_IN_BYTE = 8;
  */
 template <typename DestType>
 void setBit(DestType& dest, unsigned pos, bool value) {
-  static_assert(std::is_integral<DestType>::value);
-  static_assert(std::is_unsigned<DestType>::value);
+  static_assert(std::is_integral<DestType>::value, 
+    "DestType must be an unsigned integer type");
+  static_assert(std::is_unsigned<DestType>::value, 
+    "DestType must be an unsigned integer type");
   dest = (value << pos) | (dest & ~(1 << pos));
 }
 
@@ -55,8 +57,10 @@ void setBit(DestType& dest, unsigned pos, bool value) {
  */
 template <typename SrcType>
 bool getBit(const SrcType& src, unsigned pos) {
-  static_assert(std::is_integral<SrcType>::value);
-  static_assert(std::is_unsigned<SrcType>::value);
+  static_assert(std::is_integral<SrcType>::value,
+    "SrcType must be an unsigned integer type");
+  static_assert(std::is_unsigned<SrcType>::value,
+    "SrcType must be an unsigned integer type");
   return (static_cast<bool>(src & (1 << pos)));
 }
 
@@ -77,10 +81,10 @@ using maskShift = std::pair<T, unsigned>;
  */
 template <typename T>
 constexpr maskShift<T> width_lsb(unsigned width, unsigned lsb) {
-	return {
-		((static_cast<T>(~0) >> (sizeof(T) * BITS_IN_BYTE - width))) << lsb, // MASK
-		lsb
-	};
+  return {
+    ((static_cast<T>(~0) >> (sizeof(T) * BITS_IN_BYTE - width))) << lsb, // MASK
+    lsb
+  };
 }
 
 
@@ -98,7 +102,7 @@ template <typename T>
 constexpr maskShifts<T> w_lsb(
     unsigned width,
     unsigned lsb) {
-  return {
+  return maskShifts<T> {
     width_lsb<T>(width, lsb).first,         // MASK
     sizeof(T) * BITS_IN_BYTE - lsb - width, // LEFT_SHIFT
     sizeof(T) * BITS_IN_BYTE - width, // RIGHT_SHIFT = LEFT_SHIFT + lsb
@@ -118,10 +122,14 @@ constexpr maskShifts<T> w_lsb(
  */
 template <typename DestType, typename ValueType=DestType>
 void setBits(DestType& dest, const maskShift<DestType> m_s, const ValueType value) {
-  static_assert(std::is_integral<DestType>::value);
-  static_assert(std::is_unsigned<DestType>::value);
-  static_assert(std::is_integral<ValueType>::value);
-  static_assert(sizeof(ValueType) <= sizeof(DestType));
+  static_assert(std::is_integral<DestType>::value,
+    "DestType must be an unsigned integer type");
+  static_assert(std::is_unsigned<DestType>::value,
+    "DestType must be an unsigned integer type");
+  static_assert(std::is_integral<ValueType>::value,
+    "ValueType must be an integer type");
+  static_assert(sizeof(ValueType) <= sizeof(DestType),
+    "ValueType must be <= DestType");
   // m_s.first is the mask
   // m_s.second is the lsb
   dest = ((value << m_s.second) & m_s.first) | (dest & ~m_s.first);
@@ -138,8 +146,10 @@ void setBits(DestType& dest, const maskShift<DestType> m_s, const ValueType valu
  */
 template <typename SrcType>
 SrcType getUbits(const SrcType& src, const maskShift<SrcType> m_s) {
-  static_assert(std::is_integral<SrcType>::value);
-  static_assert(std::is_unsigned<SrcType>::value);
+  static_assert(std::is_integral<SrcType>::value,
+    "SrcType must be an unsigned integer type");
+  static_assert(std::is_unsigned<SrcType>::value,
+    "SrcType must be an unsigned integer type");
   // m_s.first is the mask
   // m_s.second is the lsb
   return ( (src & m_s.first) >> m_s.second );
@@ -156,11 +166,16 @@ SrcType getUbits(const SrcType& src, const maskShift<SrcType> m_s) {
  */
 template <typename ValueType, typename SrcType>
 ValueType getSbits(const SrcType& src, const maskShifts<SrcType> m_s) {
-  static_assert(std::is_integral<SrcType>::value);
-  static_assert(std::is_unsigned<SrcType>::value);
-  static_assert(std::is_integral<ValueType>::value);
-  static_assert(std::is_signed<ValueType>::value);
-  static_assert(sizeof(ValueType) == sizeof(SrcType));
+  static_assert(std::is_integral<SrcType>::value,
+    "SrcType must be an unsigned integer type");
+  static_assert(std::is_unsigned<SrcType>::value,
+    "SrcType must be an unsigned integer type");
+  static_assert(std::is_integral<ValueType>::value,
+    "ValueType must be a signed integer type");
+  static_assert(std::is_signed<ValueType>::value,
+    "ValueType must be a signed integer type");
+  static_assert(sizeof(ValueType) == sizeof(SrcType),
+    "ValueType must be the same size as SrcType");
   return (
     static_cast<ValueType>(
       (src & std::get<MASK>(m_s)) << std::get<LEFT_SHIFT>(m_s)
