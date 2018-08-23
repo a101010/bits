@@ -82,8 +82,8 @@ using maskShift = std::pair<T, unsigned>;
 template <typename T>
 constexpr maskShift<T> width_lsb(unsigned width, unsigned lsb) {
   return {
-    ((static_cast<T>(~0) >> (sizeof(T) * BITS_IN_BYTE - width))) << lsb, // MASK
-    lsb
+    ((static_cast<T>(~0) >> (sizeof(T) * BITS_IN_BYTE - width))) << lsb // MASK
+  , lsb
   };
 }
 
@@ -103,9 +103,9 @@ constexpr maskShifts<T> w_lsb(
     unsigned width,
     unsigned lsb) {
   return maskShifts<T> {
-    width_lsb<T>(width, lsb).first,         // MASK
-    sizeof(T) * BITS_IN_BYTE - lsb - width, // LEFT_SHIFT
-    sizeof(T) * BITS_IN_BYTE - width, // RIGHT_SHIFT = LEFT_SHIFT + lsb
+    width_lsb<T>(width, lsb).first         // MASK
+  , sizeof(T) * BITS_IN_BYTE - lsb - width // LEFT_SHIFT
+  , sizeof(T) * BITS_IN_BYTE - width // RIGHT_SHIFT = LEFT_SHIFT + lsb
   };
 }
 
@@ -122,14 +122,10 @@ constexpr maskShifts<T> w_lsb(
  */
 template <typename DestType, typename ValueType=DestType>
 void setBits(DestType& dest, const maskShift<DestType> m_s, const ValueType value) {
-  static_assert(std::is_integral<DestType>::value,
-    "DestType must be an unsigned integer type");
-  static_assert(std::is_unsigned<DestType>::value,
-    "DestType must be an unsigned integer type");
-  static_assert(std::is_integral<ValueType>::value | std::is_enum<ValueType>::value,
-    "ValueType must be an integer type or enum");
-  static_assert(sizeof(ValueType) <= sizeof(DestType),
-    "ValueType must be <= DestType");
+  static_assert(std::is_integral<DestType>::value, "DestType != uint");
+  static_assert(std::is_unsigned<DestType>::value, "DestType != uint");
+  static_assert(std::is_integral<ValueType>::value | std::is_enum<ValueType>::value, "ValueType != int/enum" );
+  static_assert(sizeof(ValueType) <= sizeof(DestType), "Incompatible ValueType/DestType sizes" );
   // m_s.first is the mask
   // m_s.second is the lsb
   dest = ((static_cast<DestType>(value) << m_s.second) & m_s.first) 
@@ -147,10 +143,8 @@ void setBits(DestType& dest, const maskShift<DestType> m_s, const ValueType valu
  */
 template <typename SrcType>
 SrcType getUbits(const SrcType& src, const maskShift<SrcType> m_s) {
-  static_assert(std::is_integral<SrcType>::value,
-    "SrcType must be an unsigned integer type");
-  static_assert(std::is_unsigned<SrcType>::value,
-    "SrcType must be an unsigned integer type");
+  static_assert(std::is_integral<SrcType>::value, "SrcType != uint" );
+  static_assert(std::is_unsigned<SrcType>::value, "SrcType != uint" );
   // m_s.first is the mask
   // m_s.second is the lsb
   return ( (src & m_s.first) >> m_s.second );
@@ -167,16 +161,11 @@ SrcType getUbits(const SrcType& src, const maskShift<SrcType> m_s) {
  */
 template <typename ValueType, typename SrcType>
 ValueType getSbits(const SrcType& src, const maskShifts<SrcType> m_s) {
-  static_assert(std::is_integral<SrcType>::value,
-    "SrcType must be an unsigned integer type");
-  static_assert(std::is_unsigned<SrcType>::value,
-    "SrcType must be an unsigned integer type");
-  static_assert(std::is_integral<ValueType>::value,
-    "ValueType must be a signed integer type");
-  static_assert(std::is_signed<ValueType>::value,
-    "ValueType must be a signed integer type");
-  static_assert(sizeof(ValueType) == sizeof(SrcType),
-    "ValueType must be the same size as SrcType");
+  static_assert(std::is_integral<SrcType>::value, "SrcType != uint" );
+  static_assert(std::is_unsigned<SrcType>::value, "SrcType != uint" );
+  static_assert(std::is_integral<ValueType>::value, "ValueType != int" );
+  static_assert(std::is_signed<ValueType>::value, "ValueType != int" );
+  static_assert(sizeof(ValueType) == sizeof(SrcType), "Incompatible ValueType/DestType sizes" );
   return (
     static_cast<ValueType>(
       (src & std::get<MASK>(m_s)) << std::get<LEFT_SHIFT>(m_s)
