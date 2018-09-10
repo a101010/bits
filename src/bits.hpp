@@ -260,7 +260,7 @@ class Bits<width, lsb, ValueType, StorageType, ResolvedValueType, true> {
     static_assert(sizeof(StorageType) * BITS_IN_BYTE >= width + lsb,
         "sizeof StorageType * BITS_IN_BYTE must be >= width + lsb");
 
-    static_assert((static_cast<typename std::make_signed<StorageType>::type>(-1) >> ((sizeof(StorageType) * BITS_IN_BYTE) - 1)) == -1,
+    static_assert((static_cast<ValueIntType>::type>(-1) >> ((sizeof(StorageType) * BITS_IN_BYTE) - 1)) == -1,
         "This architecture doesn't support sign-extending a negative signed integer with a right shift");
 
 private:
