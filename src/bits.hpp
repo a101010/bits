@@ -198,49 +198,20 @@ struct resolve_type<T, true> {
     using type = typename std::underlying_type<T>::type;
 };
 
-// Get a signed (or unsigned) bit field. Meant to be used from getSbits so that
-// template parameters can be inferred, but can also be used directly.
+// Bits computes the static constexpr parameters needed by set and get bits functions.
+// It's meant to be used from setBits, getSbits, getUbits, and getBits, but can also be
+// used directly if you don't mind specifying all your template parameters.
+// It has two implementations, selected as partial template specializations. One is for
+// signed types and the other for unsigned.
 template <unsigned width, unsigned lsb, typename ValueType, typename StorageType,
             typename ResolvedValueType = typename resolve_type< ValueType >::type,
             bool = std::is_signed< ResolvedValueType >::value>
 class Bits {
-    using ValueIntType = typename std::conditional< std::is_signed< ResolvedValueType >::value,
-                                    typename std::make_signed< StorageType >::type,
-                                    StorageType >::type;
-
-    static_assert(std::is_integral<StorageType>::value,
-        "StorageType must be an unsigned integer type");
-
-    static_assert(std::is_unsigned<StorageType>::value,
-        "StorageType must be an unsigned integer type");
-
-    static_assert(std::is_integral<ValueType>::value || std::is_enum<ValueType>::value,
-        "ValueType must be an integer or enum type");
-
-    static_assert(width < sizeof(StorageType) * BITS_IN_BYTE,
-        "width must be < than sizeof StorageType * BITS_IN_BYTE");
-
-    static_assert(sizeof(StorageType) * BITS_IN_BYTE >= width + lsb,
-        "sizeof StorageType * BITS_IN_BYTE must be >= width + lsb");
-
-    static_assert((static_cast<typename std::make_signed<StorageType>::type>(-1) >> ((sizeof(StorageType) * BITS_IN_BYTE) - 1)) == -1,
-        "This architecture doesn't support sign-extending a negative signed integer with a right shift");
-
-private:
-	static constexpr ValueIntType MASK = ((1 << width) - 1) << lsb;
-	static constexpr ValueIntType INVERSE_MASK = ~MASK;
-	static constexpr unsigned LEFT_SHIFT = sizeof(StorageType) * BITS_IN_BYTE - lsb - width;
-	static constexpr unsigned RIGHT_SHIFT = LEFT_SHIFT + lsb;
-
-public:
-	static ValueType Get(const StorageType& src) {
-	    // sign extend, unless you have an evil arch
-	    return static_cast<ValueType>( ((static_cast<ValueIntType>(src & MASK)) << LEFT_SHIFT) >> RIGHT_SHIFT );
-	}
+    // This definition is not used. It will always resolve to either the signed or unsigned implementation.
 };
 
 
-// If ResolvedValueType is signed.
+// If ResolvedValueType is signed, use this implementation.
 template <unsigned width, unsigned lsb, typename ValueType, typename StorageType, typename ResolvedValueType>
 class Bits<width, lsb, ValueType, StorageType, ResolvedValueType, true> {
     using ValueIntType = typename std::make_signed< StorageType >::type;
@@ -260,7 +231,7 @@ class Bits<width, lsb, ValueType, StorageType, ResolvedValueType, true> {
     static_assert(sizeof(StorageType) * BITS_IN_BYTE >= width + lsb,
         "sizeof StorageType * BITS_IN_BYTE must be >= width + lsb");
 
-    static_assert((static_cast<ValueIntType>::type>(-1) >> ((sizeof(StorageType) * BITS_IN_BYTE) - 1)) == -1,
+    static_assert((static_cast<ValueIntType>(-1) >> ((sizeof(StorageType) * BITS_IN_BYTE) - 1)) == -1,
         "This architecture doesn't support sign-extending a negative signed integer with a right shift");
 
 private:
@@ -280,7 +251,7 @@ public:
     }
 };
 
-// If ResolvedValueType is unsigned.
+// If ResolvedValueType is unsigned, use this implementation.
 template <unsigned width, unsigned lsb, typename ValueType, typename StorageType, typename ResolvedValueType>
 class Bits<width, lsb, ValueType, StorageType, ResolvedValueType, false> {
 
@@ -313,7 +284,11 @@ public:
     }
 };
 
-
+/**
+ * Sets a bit field.
+ * Works for enums, unsigned or signed fields.
+ * All template parameters except width and lsb can be inferred.
+ */
 template <unsigned width, unsigned lsb, typename ValueType, typename StorageType>
 void setBits(StorageType& dest, const ValueType value){
     Bits<width, lsb, ValueType, StorageType>::Set(dest, value);
@@ -339,7 +314,7 @@ ValueType getSbits(const StorageType& src) {
 }
 
 /**
- * Gets a specified type of bit field. Can be used for an Enum, signed, or unsigned field.
+ * Gets a specified type of bit field. Can be used for an enum, signed, or unsigned field.
  * Must specify the return type as a template parameter, since it can't be inferred, but StorageType can be inferred.
  */
 template <unsigned width, unsigned lsb, typename ValueType, typename StorageType>
