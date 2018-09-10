@@ -55,68 +55,58 @@ enum class Ustate : uint32_t {
     SuperconductiveAtRoomTemperature
 };
 
-TEST_CASE("Set three fields, dest = 0.", "[setBits<uint32_t, uint32_t> setBits<uint32_t, int32_t>]") {
+TEST_CASE("Set three fields, dest = 0.", "setBits") {
 	uint32_t dest = 0;
-	setBits(dest, width_lsb<uint32_t>(3, 29), 0xFFFFFFFF);
+	setBits<3, 29>(dest, 0xFFFFFFFF);
 	REQUIRE(dest == 0xE0000000);
 	int32_t value = -1;
-	setBits(dest, width_lsb<uint32_t>(3, 0), value);
+	setBits<3, 0>(dest, value);
 	REQUIRE(dest == 0xE0000007);
-	setBits(dest, width_lsb<uint32_t>(4, 5), State::SuperconductiveAtRoomTemperature);
+	setBits<4, 5>(dest, State::SuperconductiveAtRoomTemperature);
 	REQUIRE(dest == 0xE0000147);
 }
 
-TEST_CASE("Set three fields, dest = 0xFFFFFFFF.", "[setBits<uint32_t, uint32_t> setBits<uint32_t, int32_t>]") {
+TEST_CASE("Set three fields, dest = 0xFFFFFFFF.", "setBits") {
 	uint32_t dest = 0xFFFFFFFF;
-	setBits(dest, width_lsb<uint32_t>(3, 29), 0);
+	setBits<3, 29>(dest, 0);
 	REQUIRE(dest == 0x1FFFFFFF);
-	setBits(dest, width_lsb<uint32_t>(3, 2), 0);
+	setBits<3, 2>(dest, 0);
 	REQUIRE(dest == 0x1FFFFFE3);
 	int32_t value = -4;
-	setBits(dest, width_lsb<uint32_t>(3, 0), value);
+	setBits<3, 0>(dest, value);
 	REQUIRE(dest == 0x1FFFFFE4);
 }
 
 TEST_CASE("Get two unsigned fields.", "[getUbits<uint32_t>]") {
 	uint32_t src = 0xA0000F45;
-	REQUIRE(getUbits(src, width_lsb<uint32_t>(3, 29)) == 5);
-	REQUIRE(getUbits(src, width_lsb<uint32_t>(9, 0)) == 0x145);
+	REQUIRE(getUbits<3, 29>(src) == 5);
+	REQUIRE(getUbits<9,  0>(src) == 0x145);
 }
 
 TEST_CASE("Get two signed fields.", "[getSbits<uint32_t, int32_t>]") {
 	uint32_t src = 0xA0000F45;
-	REQUIRE(getSbits<int32_t>(src, w_lsb<uint32_t>(3, 29)) == -3);
-	REQUIRE(getSbits<int32_t>(src, w_lsb<uint32_t>(9, 0)) == -187);
+	REQUIRE(getSbits<3, 29>(src) == -3);
+	REQUIRE(getSbits<9,  0>(src) == -187);
 }
 
-TEST_CASE("Set three fields, dest = 0." "[SBits::Set and UBits::SET]") {
+TEST_CASE("Set three fields, dest = 0." "setBits") {
     uint32_t storage = 0;
-    Bits<3, 29, uint32_t, uint32_t>::Set(storage, 0XFFFFFFFF);
+    setBits<3, 29>(storage, 0XFFFFFFFF);
     REQUIRE(storage == 0xE0000000);
-    Bits<3,  0, uint32_t, uint32_t>::Set(storage, 0XFFFFFFFF);
+    setBits<3,  0>(storage, -1);
     REQUIRE(storage == 0xE0000007);
-    setBits<4, 5>(storage, State::SuperconductiveAtRoomTemperature);
+    setBits<4,  5>(storage, State::SuperconductiveAtRoomTemperature);
     REQUIRE(storage == 0xE0000147);
-
 }
 
-TEST_CASE("Set signed enum fields, dest = 0." "[EBits::Set]") {
-    uint32_t storage = 0;
-    setBits<4, 5>(storage, State::SuperconductiveAtRoomTemperature);
-    REQUIRE(storage == 0x00000140);
-}
-
-TEST_CASE("Set unsigned enum fields, dest = 0." "[EBits::Set]") {
+TEST_CASE("Set unsigned enum fields, dest = 0." "setBits") {
     uint32_t storage = 0;
     setBits<4, 5>(storage, Ustate::SuperconductiveAtRoomTemperature);
     REQUIRE(storage == 0x00000140);
 }
 
-TEST_CASE("Get three signed fields.", "[getSbits]") {
+TEST_CASE("Get three signed fields.", "[getBits]") {
     uint32_t src = 0xA0000F45;
-    REQUIRE(Bits<3,29, int32_t, uint32_t>::Get(src) == -3);
-    REQUIRE(Bits<9, 0, int32_t, uint32_t>::Get(src) == -187);
-    REQUIRE(Bits<4, 8, State, uint32_t>::Get(src) == State::ON);
     REQUIRE(getBits<4, 8, State>(src) == State::ON);
     REQUIRE(getBits<4, 8, Ustate>(src) == Ustate::ON);
 }
