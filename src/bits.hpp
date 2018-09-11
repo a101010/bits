@@ -28,9 +28,6 @@
   */
 
 #include <type_traits>
-#include <tuple>
-#include <utility>
-#include <stdexcept>
 
 namespace bits {
 
@@ -108,7 +105,7 @@ class Bits<width, lsb, ValueType, StorageType, ResolvedValueType, true> {
         "This architecture doesn't support sign-extending a negative signed integer with a right shift");
 
 private:
-    static constexpr ValueIntType MASK = ((1 << width) - 1) << lsb;
+    static constexpr ValueIntType MASK = ((static_cast<ValueIntType>(1) << width) - 1) << lsb;
     static constexpr ValueIntType INVERSE_MASK = ~MASK;
     static constexpr unsigned LEFT_SHIFT = sizeof(StorageType) * BITS_IN_BYTE - lsb - width;
     static constexpr unsigned RIGHT_SHIFT = LEFT_SHIFT + lsb;
@@ -120,7 +117,7 @@ public:
 
     static ValueType Get(const StorageType& src) {
         // sign extend, unless you have an evil arch
-        return static_cast<ValueType>( ((static_cast<ValueIntType>(src & MASK)) << LEFT_SHIFT) >> RIGHT_SHIFT );
+        return static_cast<ValueType>(static_cast<ValueIntType>((src & MASK) << LEFT_SHIFT) >> RIGHT_SHIFT);
     }
 };
 
@@ -144,7 +141,7 @@ class Bits<width, lsb, ValueType, StorageType, ResolvedValueType, false> {
         "sizeof StorageType * BITS_IN_BYTE must be >= width + lsb");
 
 private:
-    static constexpr StorageType MASK = ((1 << width) - 1) << lsb;
+    static constexpr StorageType MASK = ((static_cast<StorageType>(1) << width) - 1) << lsb;
     static constexpr StorageType INVERSE_MASK = ~MASK;
 
 public:
