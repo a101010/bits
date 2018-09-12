@@ -7,22 +7,48 @@ using namespace bits;
 
 TEST_CASE("Set a bit.", "[setBit]") {
 	uint32_t dest = 0;
-	setBit(dest, 2, true);
+	setBit<2>(dest, true);
 	REQUIRE(dest == 0x0004);
 }
 
 TEST_CASE("Clear a bit.", "[setBit]") {
 	uint32_t dest = ~0;
-	setBit(dest, 2, false);
+	setBit<2>(dest, false);
 	REQUIRE(dest == 0xFFFFFFFB);
 }
 
 TEST_CASE("Read some individual bits.", "[getBit]") {
 	uint32_t src = 0x80000001;
-	REQUIRE(getBit(src, 31) == true);
-	REQUIRE(getBit(src, 30) == false);
-	REQUIRE(getBit(src, 0) == true);
-	REQUIRE(getBit(src, 1) == false);
+	REQUIRE(getBit<31>(src) == true);
+	REQUIRE(getBit<30>(src) == false);
+	REQUIRE(getBit<0>(src) == true);
+	REQUIRE(getBit<1>(src) == false);
+}
+
+TEST_CASE("getBit from uint64_t.", "[getBit]") {
+    uint64_t src = 0x8000000000000001;
+    REQUIRE(getBit<63>(src) == true);
+}
+
+TEST_CASE("setBit in uint64_t.", "[setBit]") {
+    uint64_t dest = 0;
+    setBit<63>(dest, true);
+    REQUIRE(dest == 0x8000000000000000);
+}
+
+TEST_CASE("getBit from uint16_t", "[getBit]") {
+    uint16_t src = 0x8000;
+    REQUIRE(getBit<15>(src) == true);
+}
+
+TEST_CASE("setBit in uint16_t", "[setBit]") {
+    uint16_t dest = 0;
+    setBit<15>(dest, true);
+    REQUIRE(dest == 0x8000);
+}
+
+TEST_CASE("getBit from uint8_t", "[getBit]") {
+
 }
 
 enum class State {

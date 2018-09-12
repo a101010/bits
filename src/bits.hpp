@@ -36,25 +36,37 @@ constexpr unsigned BITS_IN_BYTE = 8;
 /**
  * Set a bit in dest at pos.
  */
-template <typename DestType>
-void setBit(DestType& dest, unsigned pos, bool value) {
+template <unsigned pos, typename DestType>
+void setBit(DestType& dest, bool value) {
+
   static_assert(std::is_integral<DestType>::value, 
     "DestType must be an unsigned integer type");
+
   static_assert(std::is_unsigned<DestType>::value, 
     "DestType must be an unsigned integer type");
-  dest = (value << pos) | (dest & ~(1 << pos));
+
+  static_assert(pos < sizeof(DestType) * BITS_IN_BYTE,
+    "pos must be < sizeof(DestType) * BITS_IN_BYTE");
+
+  dest = (static_cast<DestType>(value) << pos) | (dest & ~(static_cast<DestType>(1) << pos));
 }
 
 /**
  * Get a bit from src at pos.
  */
-template <typename SrcType>
-bool getBit(const SrcType& src, unsigned pos) {
+template <unsigned pos, typename SrcType>
+bool getBit(const SrcType& src) {
+
   static_assert(std::is_integral<SrcType>::value,
     "SrcType must be an unsigned integer type");
+
   static_assert(std::is_unsigned<SrcType>::value,
     "SrcType must be an unsigned integer type");
-  return (static_cast<bool>(src & (1 << pos)));
+
+  static_assert(pos < sizeof(SrcType) * BITS_IN_BYTE,
+    "pos must be < sizeof(SrcType) * BITS_IN_BYTE");
+
+  return (static_cast<bool>(src & (static_cast<SrcType>(1) << pos)));
 }
 
 
