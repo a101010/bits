@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BITS_HPP
+#define BITS_HPP
 
 /* Copyright (C) 2018 Alan Grover
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,17 +22,33 @@
  */
 
  /**
-  * Bits is a small header-only bit-manipulation library.
+  * Bits is a small header-only bit-manipulation library that works
+  * with c++98 but can take advantage of compile-time safety checks
+  * on c++11 or better.
   *
   * Bit positions are specified using little-endian order; pos == 0 is the least
   * significant bit.
   */
 
-#include <type_traits>
+// Allow it to compile on pre-C++11 compilers
+// MSVC reports __cplusplus as being C98 since it doesn't conform to all features of the newer standard(s)
+// The MSVC_LANG approximates the compilers capabilities
+#ifndef _MSVC_LANG
+    #define _MSCV_LANG __cplusplus
+#endif
+
+#if __cplusplus < 201103L && _MSVC_LANG < 201103L
+    #define constexpr const
+    #define static_assert(a,b)
+    #include <limits.h>
+#else
+    #include <type_traits>
+    #include <climits>
+#endif
 
 namespace bits {
 
-constexpr unsigned BITS_IN_BYTE = 8;
+constexpr unsigned BITS_IN_BYTE = CHAR_BIT;
 
 /**
  * Set a bit in dest at pos.
@@ -39,10 +56,10 @@ constexpr unsigned BITS_IN_BYTE = 8;
 template <unsigned pos, typename DestType>
 void setBit(DestType& dest, bool value) {
 
-  static_assert(std::is_integral<DestType>::value, 
+  static_assert(std::is_integral<DestType>::value,
     "DestType must be an unsigned integer type");
 
-  static_assert(std::is_unsigned<DestType>::value, 
+  static_assert(std::is_unsigned<DestType>::value,
     "DestType must be an unsigned integer type");
 
   static_assert(pos < sizeof(DestType) * BITS_IN_BYTE,
@@ -69,139 +86,108 @@ bool getBit(const SrcType& src) {
   return (static_cast<bool>(src & (static_cast<SrcType>(1) << pos)));
 }
 
+/**
+ * Set a field in dest to value. The size of the field in bits is width and the
+ * field's least significant bit is at lsb.
+ */
+template<unsigned width, unsigned lsb, typename DestType, typename ValueType>
+void setBits(DestType& dest, const ValueType value) {
+    static_assert(std::is_integral<DestType>::value,
+        "DestType must be an unsigned integer type");
 
-template <typename T, bool = std::is_enum<T>::value >
-struct resolve_type {
-    using type = T;
-};
+    static_assert(std::is_unsigned<DestType>::value,
+        "DestType must be an unsigned integer type");
 
-template <typename T>
-struct resolve_type<T, true> {
-    using type = typename std::underlying_type<T>::type;
-};
-
-// Bits computes the static constexpr parameters needed by set and get bits functions.
-// It's meant to be used from setBits, getSbits, getUbits, and getBits, but can also be
-// used directly if you don't mind specifying all your template parameters.
-// It has two implementations, selected as partial template specializations. One is for
-// signed types and the other for unsigned.
-template <unsigned width, unsigned lsb, typename ValueType, typename StorageType,
-            typename ResolvedValueType = typename resolve_type< ValueType >::type,
-            bool = std::is_signed< ResolvedValueType >::value>
-class Bits {
-    // This definition is not used. It will always resolve to either the signed or unsigned implementation.
-};
-
-
-// If ResolvedValueType is signed, use this implementation.
-template <unsigned width, unsigned lsb, typename ValueType, typename StorageType, typename ResolvedValueType>
-class Bits<width, lsb, ValueType, StorageType, ResolvedValueType, true> {
-    using ValueIntType = typename std::make_signed< StorageType >::type;
-
-    static_assert(std::is_integral<StorageType>::value,
-        "StorageType must be an unsigned integer type");
-
-    static_assert(std::is_unsigned<StorageType>::value,
-        "StorageType must be an unsigned integer type");
-
-    static_assert(std::is_integral<ValueType>::value || std::is_enum<ValueType>::value,
+    static_assert(std::is_integral<ValueType>::value
+        || std::is_enum<ValueType>::value,
         "ValueType must be an integer or enum type");
 
-    static_assert(width < sizeof(StorageType) * BITS_IN_BYTE,
-        "width must be < than sizeof StorageType * BITS_IN_BYTE");
+    static_assert(width > 0,
+        "width must be > 0");
 
-    static_assert(sizeof(StorageType) * BITS_IN_BYTE >= width + lsb,
-        "sizeof StorageType * BITS_IN_BYTE must be >= width + lsb");
+    static_assert(width < sizeof(DestType) * BITS_IN_BYTE,
+        "width must be < than sizeof DestType * BITS_IN_BYTE");
 
-    static_assert((static_cast<ValueIntType>(-1) >> ((sizeof(StorageType) * BITS_IN_BYTE) - 1)) == -1,
-        "This architecture doesn't support sign-extending a negative signed integer with a right shift");
+    static_assert(sizeof(DestType) * BITS_IN_BYTE >= width + lsb,
+        "sizeof DestType * BITS_IN_BYTE must be >= width + lsb");
 
-private:
-    static constexpr ValueIntType MASK = ((static_cast<ValueIntType>(1) << width) - 1) << lsb;
-    static constexpr ValueIntType INVERSE_MASK = ~MASK;
-    static constexpr unsigned LEFT_SHIFT = sizeof(StorageType) * BITS_IN_BYTE - lsb - width;
-    static constexpr unsigned RIGHT_SHIFT = LEFT_SHIFT + lsb;
+    static constexpr DestType MASK = ((static_cast<DestType>(1) << width) - 1) << lsb;
 
-public:
-    static void Set(StorageType& dest, const ValueType value) {
-        dest = ((static_cast<StorageType>(value) << lsb) & MASK) | (dest & INVERSE_MASK);
-    }
+    static constexpr DestType INV_MASK = ~MASK;
 
-    static ValueType Get(const StorageType& src) {
-        // sign extend, unless you have an evil arch
-        return static_cast<ValueType>(static_cast<ValueIntType>((src & MASK) << LEFT_SHIFT) >> RIGHT_SHIFT);
-    }
-};
-
-// If ResolvedValueType is unsigned, use this implementation.
-template <unsigned width, unsigned lsb, typename ValueType, typename StorageType, typename ResolvedValueType>
-class Bits<width, lsb, ValueType, StorageType, ResolvedValueType, false> {
-
-    static_assert(std::is_integral<StorageType>::value,
-        "StorageType must be an unsigned integer type");
-
-    static_assert(std::is_unsigned<StorageType>::value,
-        "StorageType must be an unsigned integer type");
-
-    static_assert(std::is_integral<ValueType>::value || std::is_enum<ValueType>::value,
-        "ValueType must be an integer or enum type");
-
-    static_assert(width < sizeof(StorageType) * BITS_IN_BYTE,
-        "width must be < than sizeof StorageType * BITS_IN_BYTE");
-
-    static_assert(sizeof(StorageType) * BITS_IN_BYTE >= width + lsb,
-        "sizeof StorageType * BITS_IN_BYTE must be >= width + lsb");
-
-private:
-    static constexpr StorageType MASK = ((static_cast<StorageType>(1) << width) - 1) << lsb;
-    static constexpr StorageType INVERSE_MASK = ~MASK;
-
-public:
-    static void Set(StorageType& dest, const ValueType value) {
-        dest = ((static_cast<StorageType>(value) << lsb) & MASK) | (dest & INVERSE_MASK);
-    }
-
-    static ValueType Get(const StorageType& src) {
-        return static_cast<ValueType>(( src & MASK) >> lsb);
-    }
-};
-
-/**
- * Sets a bit field.
- * Works for enums, unsigned or signed fields.
- * All template parameters except width and lsb can be inferred.
- */
-template <unsigned width, unsigned lsb, typename ValueType, typename StorageType>
-void setBits(StorageType& dest, const ValueType value){
-    Bits<width, lsb, ValueType, StorageType>::Set(dest, value);
+    dest = (MASK & (static_cast<DestType>(value) << lsb)) | (dest & INV_MASK);
 }
 
 /**
- * Gets an unsigned bit field.
- * All template parameters except width and lsb can be inferred.
+ * Get an unsigned field from src. The size of the field in bits is width and the
+ * field's least significant bit at lsb.
  */
-template <unsigned width, unsigned lsb, typename StorageType>
-StorageType getUbits(const StorageType& src) {
-    return Bits<width, lsb, StorageType, StorageType>::Get(src);
-}
+template<unsigned width, unsigned lsb, typename T>
+T getUbits(const T& src){
+    static_assert(std::is_integral<T>::value,
+        "T must be an unsigned integer type");
 
+    static_assert(std::is_unsigned<T>::value,
+        "T must be an unsigned integer type");
+
+    static_assert(width > 0,
+        "width must be > 0");
+
+    static_assert(width < sizeof(T) * BITS_IN_BYTE,
+        "width must be < than sizeof T * BITS_IN_BYTE");
+
+    static_assert(sizeof(T) * BITS_IN_BYTE >= width + lsb,
+        "sizeof T * BITS_IN_BYTE must be >= width + lsb");
+
+    static constexpr T MASK = ((static_cast<T>(1) << width) - 1) << lsb;
+
+    return (MASK & src) >> lsb;
+}
 
 /**
- * Gets a signed bit field.
- * All template parameters except width and lsb can be inferred.
+ * Get a signed field from src. The size of the field in bits is width and the
+ * field's least significant bit at lsb.
  */
-template <unsigned width, unsigned lsb, typename StorageType, typename ValueType = typename std::make_signed<StorageType>::type>
-ValueType getSbits(const StorageType& src) {
-    return Bits<width, lsb, ValueType, StorageType>::Get(src);
+template<unsigned width, unsigned lsb, typename ValueType, typename SrcType>
+ValueType getSbits(const SrcType& src) {
+    static_assert(std::is_integral<SrcType>::value,
+        "SrcType must be an unsigned integer type");
+
+    static_assert(std::is_unsigned<SrcType>::value,
+        "SrcType must be an unsigned integer type");
+
+    static_assert(std::is_integral<ValueType>::value,
+        "ValueType must be a signed integer type");
+
+    static_assert(std::is_signed<ValueType>::value,
+        "ValueType must be a signed integer type");
+
+    static_assert(width > 0,
+        "width must be > 0");
+
+    static_assert(width < sizeof(SrcType) * BITS_IN_BYTE,
+        "width must be < than sizeof SrcType * BITS_IN_BYTE");
+
+    static_assert(sizeof(SrcType) * BITS_IN_BYTE >= width + lsb,
+        "sizeof SrcType * BITS_IN_BYTE must be >= width + lsb");
+
+    static_assert(sizeof(ValueType) * BITS_IN_BYTE >= width,
+        "sizeof ValueType * BITS_IN_BYTE must be >= width");
+
+    static constexpr SrcType MASK = ((static_cast<SrcType>(1) << width) - 1) << lsb;
+
+    // minimum value in a signed field of width bits
+    static constexpr SrcType MIN_VALUE = static_cast<SrcType>(1) << (width - 1);
+
+    SrcType retVal = (MASK & src) >> lsb;
+    // sign extend without implementation defined behavior
+    // XORing clears the bit at MIN_VALUE;
+    // then it uses unsigned integer underflow behavior guaranteed by the
+    // standard to fill MIN_VALUE and the bits to the left of it
+    return static_cast<ValueType>((retVal ^ MIN_VALUE) - MIN_VALUE);
 }
 
-/**
- * Gets a specified type of bit field. Can be used for an enum, signed, or unsigned field.
- * Must specify the return type as a template parameter, since it can't be inferred, but StorageType can be inferred.
- */
-template <unsigned width, unsigned lsb, typename ValueType, typename StorageType>
-ValueType getBits(const StorageType& src){
-    return Bits<width, lsb, ValueType, StorageType>::Get(src);
 }
 
-} // namespace
+
+#endif

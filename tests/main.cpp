@@ -5,19 +5,19 @@
 
 using namespace bits;
 
-TEST_CASE("Set a bit.", "[setBit]") {
+TEST_CASE("Set a bit.") {
 	uint32_t dest = 0;
 	setBit<2>(dest, true);
 	REQUIRE(dest == 0x0004);
 }
 
-TEST_CASE("Clear a bit.", "[setBit]") {
+TEST_CASE("Clear a bit.") {
 	uint32_t dest = ~0;
 	setBit<2>(dest, false);
 	REQUIRE(dest == 0xFFFFFFFB);
 }
 
-TEST_CASE("Read some individual bits.", "[getBit]") {
+TEST_CASE("Read some individual bits.") {
 	uint32_t src = 0x80000001;
 	REQUIRE(getBit<31>(src) == true);
 	REQUIRE(getBit<30>(src) == false);
@@ -25,29 +25,29 @@ TEST_CASE("Read some individual bits.", "[getBit]") {
 	REQUIRE(getBit<1>(src) == false);
 }
 
-TEST_CASE("getBit from uint64_t.", "[getBit]") {
+TEST_CASE("getBit from uint64_t.") {
     uint64_t src = 0x8000000000000001;
     REQUIRE(getBit<63>(src) == true);
 }
 
-TEST_CASE("setBit in uint64_t.", "[setBit]") {
+TEST_CASE("setBit in uint64_t.") {
     uint64_t dest = 0;
     setBit<63>(dest, true);
     REQUIRE(dest == 0x8000000000000000);
 }
 
-TEST_CASE("getBit from uint16_t", "[getBit]") {
+TEST_CASE("getBit from uint16_t") {
     uint16_t src = 0x8000;
     REQUIRE(getBit<15>(src) == true);
 }
 
-TEST_CASE("setBit in uint16_t", "[setBit]") {
+TEST_CASE("setBit in uint16_t") {
     uint16_t dest = 0;
     setBit<15>(dest, true);
     REQUIRE(dest == 0x8000);
 }
 
-TEST_CASE("getBit from uint8_t", "[getBit]") {
+TEST_CASE("getBit from uint8_t") {
 
 }
 
@@ -81,7 +81,7 @@ enum class Ustate : uint32_t {
     SuperconductiveAtRoomTemperature
 };
 
-TEST_CASE("Set three fields, dest = 0.", "[setBits]") {
+TEST_CASE("Set three fields, dest = 0.") {
 	uint32_t dest = 0;
 	setBits<3, 29>(dest, 0xFFFFFFFF);
 	REQUIRE(dest == 0xE0000000);
@@ -92,7 +92,7 @@ TEST_CASE("Set three fields, dest = 0.", "[setBits]") {
 	REQUIRE(dest == 0xE0000147);
 }
 
-TEST_CASE("Set three fields, dest = 0xFFFFFFFF.", "[setBits]") {
+TEST_CASE("Set three fields, dest = 0xFFFFFFFF.") {
 	uint32_t dest = 0xFFFFFFFF;
 	setBits<3, 29>(dest, 0);
 	REQUIRE(dest == 0x1FFFFFFF);
@@ -103,20 +103,20 @@ TEST_CASE("Set three fields, dest = 0xFFFFFFFF.", "[setBits]") {
 	REQUIRE(dest == 0x1FFFFFE4);
 }
 
-TEST_CASE("Get two unsigned fields.", "[getUbits]") {
+TEST_CASE("Get two unsigned fields.") {
 	uint32_t src = 0xA0000F45;
 	REQUIRE(getUbits<3, 29>(src) == 5);
 	REQUIRE(getUbits<9,  0>(src) == 0x145);
 }
 
-TEST_CASE("Get three signed fields.", "[getSbits<uint32_t, int32_t>]") {
+TEST_CASE("Get three signed fields.") {
 	uint32_t src = 0xA0000F45;
-	REQUIRE(getSbits<3, 29>(src) == -3);
-	REQUIRE(getSbits<3,  0>(src) == -3);
-	REQUIRE(getSbits<9,  0>(src) == -187);
+	REQUIRE(getSbits<3, 29, int32_t>(src) == -3);
+	REQUIRE(getSbits<3,  0, int32_t>(src) == -3);
+	REQUIRE(getSbits<9,  0, int32_t>(src) == -187);
 }
 
-TEST_CASE("Set three fields, dest = 0." "[setBits]") {
+TEST_CASE("Set three fields, dest = 0.") {
     uint32_t storage = 0;
     setBits<3, 29>(storage, 0XFFFFFFFF);
     REQUIRE(storage == 0xE0000000);
@@ -126,45 +126,45 @@ TEST_CASE("Set three fields, dest = 0." "[setBits]") {
     REQUIRE(storage == 0xE0000147);
 }
 
-TEST_CASE("Set unsigned enum field, dest = 0." "[setBits]") {
+TEST_CASE("Set unsigned enum field, dest = 0.") {
     uint32_t storage = 0;
     setBits<4, 5>(storage, Ustate::SuperconductiveAtRoomTemperature);
     REQUIRE(storage == 0x00000140);
 }
 
-TEST_CASE("Get enum fields.", "[getBits]") {
+TEST_CASE("Get enum fields.") {
     uint32_t src = 0xA0000F45;
-    REQUIRE(getBits<4, 8, State>(src) == State::ON);
-    REQUIRE(getBits<4, 8, Ustate>(src) == Ustate::ON);
+    REQUIRE(static_cast<State>( getSbits<4, 8, int32_t>(src) ) == State::ON);
+    REQUIRE(static_cast<Ustate>( getUbits<4, 8>(src) ) == Ustate::ON);
 }
 
-TEST_CASE("Get from 64-bit src.", "[getBits]") {
+TEST_CASE("Get from 64-bit src.") {
     uint64_t src = 0xA000000000000F45;
-    REQUIRE(getSbits<3, 61>(src) == -3);
+    REQUIRE(getSbits<3, 61, int64_t>(src) == -3);
     REQUIRE(getUbits<3, 61>(src) == 5);
-    REQUIRE(getBits<4, 8, State>(src) == State::ON);
-    REQUIRE(getBits<4, 8, Ustate>(src) == Ustate::ON);
+    REQUIRE(static_cast<State>( getSbits<4, 8, int64_t>(src) ) == State::ON);
+    REQUIRE(static_cast<Ustate>( getUbits<4, 8>(src) ) == Ustate::ON);
 }
 
-TEST_CASE("Get from a 16-bit src.", "[getBits]"){
+TEST_CASE("Get from a 16-bit src."){
     uint16_t src = 0xA045;
-    REQUIRE(getSbits<3, 13>(src) == -3);
-    REQUIRE(getSbits<3, 0>(src) == -3);
+    REQUIRE(getSbits<3, 13, int16_t>(src) == -3);
+    REQUIRE(getSbits<3, 0, int16_t>(src) == -3);
     REQUIRE(getUbits<3, 0>(src) == 5);
-    REQUIRE(getBits<4, 0, State>(src) == State::CA);
-    REQUIRE(getBits<4, 0, Ustate>(src) == Ustate::CA);
+    REQUIRE(static_cast<State>( getSbits<4, 0, int16_t>(src) ) == State::CA);
+    REQUIRE(static_cast<Ustate>( getUbits<4, 0>(src) ) == Ustate::CA);
 }
 
-TEST_CASE("Get from an 8-bit src.", "[getBits]"){
+TEST_CASE("Get from an 8-bit src."){
     uint8_t src = 0x45;
-    REQUIRE(getSbits<3, 0>(src) == -3);
+    REQUIRE(getSbits<3, 0, int8_t>(src) == -3);
     REQUIRE(getUbits<3, 0>(src) == 5);
-    REQUIRE(getSbits<3, 5>(src) == 2);
-    REQUIRE(getBits<4, 0, State>(src) == State::CA);
-    REQUIRE(getBits<4, 0, Ustate>(src) == Ustate::CA);
+    REQUIRE(getSbits<3, 5, int8_t>(src) == 2);
+    REQUIRE(static_cast<State>( getSbits<4, 0, int8_t>(src) ) == State::CA);
+    REQUIRE(static_cast<Ustate>( getUbits<4, 0>(src) ) == Ustate::CA);
 }
 
-TEST_CASE("Set three fields, dest = 0, uint64_t.", "[setBits]") {
+TEST_CASE("Set three fields, dest = 0, uint64_t.") {
     uint64_t dest = 0;
     setBits<3, 61>(dest, 0xFFFFFFFFFFFFFFFF);
     REQUIRE(dest == 0xE000000000000000);
@@ -175,7 +175,7 @@ TEST_CASE("Set three fields, dest = 0, uint64_t.", "[setBits]") {
     REQUIRE(dest == 0xE000000000000147);
 }
 
-TEST_CASE("Set three fields, dest = 0xFFFFFFFFFFFFFFFF, uint64_t.", "[setBits]") {
+TEST_CASE("Set three fields, dest = 0xFFFFFFFFFFFFFFFF, uint64_t.") {
     uint64_t dest = 0xFFFFFFFFFFFFFFFF;
     setBits<3, 61>(dest, 0);
     REQUIRE(dest == 0x1FFFFFFFFFFFFFFF);
@@ -186,7 +186,7 @@ TEST_CASE("Set three fields, dest = 0xFFFFFFFFFFFFFFFF, uint64_t.", "[setBits]")
     REQUIRE(dest == 0x1FFFFFFFFFFFFFE4);
 }
 
-TEST_CASE("Set three fields, dest = 0, uint8_t.", "[setBits]") {
+TEST_CASE("Set three fields, dest = 0, uint8_t.") {
     uint8_t dest = 0;
     setBits<3, 5>(dest, 0xFF);
     REQUIRE(dest == 0xE0);
@@ -197,7 +197,7 @@ TEST_CASE("Set three fields, dest = 0, uint8_t.", "[setBits]") {
     REQUIRE(dest == 0xD7);
 }
 
-TEST_CASE("Set three fields, dest = 0xFF, uint8_t.", "[setBits]") {
+TEST_CASE("Set three fields, dest = 0xFF, uint8_t.") {
     uint8_t dest = 0xFF;
     setBits<3, 5>(dest, 0);
     REQUIRE(dest == 0x1F);
@@ -208,7 +208,7 @@ TEST_CASE("Set three fields, dest = 0xFF, uint8_t.", "[setBits]") {
     REQUIRE(dest == 0x04);
 }
 
-TEST_CASE("Set three fields, dest = 0, uint16_t.", "[setBits]") {
+TEST_CASE("Set three fields, dest = 0, uint16_t.") {
     uint16_t dest = 0;
     setBits<3, 13>(dest, 0xFFFF);
     REQUIRE(dest == 0xE000);
@@ -220,7 +220,7 @@ TEST_CASE("Set three fields, dest = 0, uint16_t.", "[setBits]") {
 }
 
 
-TEST_CASE("Set three fields, dest = 0xFFFF, uint16_t.", "[setBits]") {
+TEST_CASE("Set three fields, dest = 0xFFFF, uint16_t.") {
     uint16_t dest = 0xFFFF;
     setBits<3, 13>(dest, 0);
     REQUIRE(dest == 0x1FFF);

@@ -1,8 +1,11 @@
 # bits
-A header-only modern C++ bit-masking library.
+A header-only C++ bit-masking library. It can be compiled with c++98,
+but provides no error checking.
 
-Mask and shift constants are calculated `constexpr`,  which makes the interface
-a bit bizarre, but reduces runtime code to the essentials.
+Compile time error checks are done if compiled with C++11.
+
+Mask and shift constants are calculated from template parameters to minimize
+runtime calculations.
 
 ## Usage examples
 See the comments and unit tests. You only need to add bits.hpp to your project,
